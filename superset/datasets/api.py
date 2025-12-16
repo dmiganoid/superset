@@ -554,8 +554,6 @@ class DatasetRestApi(BaseSupersetModelRestApi):
 
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
 
-        from superset.models.slice import Slice
-
         export_name = "dataset_export"
         
         if requested_ids:
