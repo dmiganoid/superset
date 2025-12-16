@@ -724,10 +724,9 @@ const Header = () => {
           <div css={actionButtonsStyle}>
             {NavExtension && <NavExtension />}
 
-            {/* --- НАЧАЛО ВСТАВКИ: Кнопка Fullscreen (SVG версия) --- */}
             <Button
               onClick={toggleFullScreen}
-              tooltip="На весь экран" /* В старых версиях tooltip, в новых title. Лучше оставить tooltip */
+              tooltip="На весь экран"
               css={theme => css`
                   margin-right: ${theme.sizeUnit * 2}px;
                   display: inline-flex;
@@ -736,7 +735,6 @@ const Header = () => {
                   min-width: 32px; /* Фикс ширины, чтобы не схлопывалась */
               `}
             >
-              {/* Прямая вставка SVG (Иконка монитора) */}
               <svg
                 width="18"
                 height="18"
@@ -753,7 +751,6 @@ const Header = () => {
                 <line x1="12" y1="17" x2="12" y2="21"></line>
               </svg>
             </Button>
-            {/* --- КОНЕЦ ВСТАВКИ --- */}
 
             {userCanEdit && (
               <Button

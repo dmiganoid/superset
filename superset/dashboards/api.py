@@ -1111,7 +1111,17 @@ class DashboardRestApi(CustomTagsOptimizationMixin, BaseSupersetModelRestApi):
 
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         root = f"dashboard_export_{timestamp}"
-        filename = f"{root}.zip"
+        filename = f"{root}.zip" 
+
+        dashboards = DashboardDAO.find_by_ids(requested_ids)
+
+        if len(dashboards) == 1:
+          dashboard = dashboards[0]
+          raw_name = dashboard.slug or dashboard.dashboard_title or "dashboard"
+                
+          export_name = raw_name.lower().replace(" ", "_")
+                
+          filename = f"{export_name}_{timestamp}.zip"
 
         buf = BytesIO()
         with ZipFile(buf, "w") as bundle:

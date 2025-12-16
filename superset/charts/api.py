@@ -845,9 +845,20 @@ class ChartRestApi(BaseSupersetModelRestApi):
               $ref: '#/components/responses/500'
         """
         requested_ids = kwargs["rison"]
+
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         root = f"chart_export_{timestamp}"
         filename = f"{root}.zip"
+
+        charts = ChartDAO.find_by_ids(requested_ids)
+            
+        if len(charts) == 1:
+            chart = charts[0]
+            raw_name = chart.slice_name or "untitled_chart"
+                
+            export_name = raw_name.lower().replace(" ", "_")
+                
+            filename = f"{export_name}_{timestamp}.zip"
 
         buf = BytesIO()
         with ZipFile(buf, "w") as bundle:

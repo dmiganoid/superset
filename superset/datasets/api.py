@@ -553,7 +553,18 @@ class DatasetRestApi(BaseSupersetModelRestApi):
         requested_ids = kwargs["rison"]
 
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        root = f"dataset_export_{timestamp}"
+
+        from superset.models.slice import Slice
+
+        export_name = "dataset_export"
+        
+        if requested_ids:
+            first_dataset = DatasetDAO.find_by_id(requested_ids[0])
+            if first_dataset:
+                raw_name = first_dataset.table_name
+                export_name = raw_name.lower().replace(" ", "_")
+        
+        root = f"{export_name}_{timestamp}"
         filename = f"{root}.zip"
 
         buf = BytesIO()
