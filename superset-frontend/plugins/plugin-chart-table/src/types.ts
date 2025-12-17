@@ -80,6 +80,7 @@ export interface TableChartData {
 }
 
 export type TableChartFormData = QueryFormData & {
+  highlighted_row_indices?: string;
   align_pn?: boolean;
   color_pn?: boolean;
   include_time?: boolean;
@@ -106,6 +107,7 @@ export interface TableChartProps extends ChartProps {
   };
   rawFormData: TableChartFormData;
   queriesData: ChartDataResponseResult[];
+  highlightedRows?: number[];
 }
 
 export type BasicColorFormatterType = {
@@ -176,6 +178,7 @@ export interface TableChartTransformedProps<D extends DataRecord = DataRecord> {
   hasServerPageLengthChanged: boolean;
   serverPageLength: number;
   slice_id: number;
+  highlightedRows?: number[];
 }
 
 export enum ColorSchemeEnum {

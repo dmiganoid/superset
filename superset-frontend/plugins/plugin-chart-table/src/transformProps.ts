@@ -471,13 +471,13 @@ const transformProps = (
     emitCrossFilters,
     theme,
   } = chartProps;
-
+  
   const formData = merge(
     {},
     originalFormData,
     originalFormData.extra_form_data,
   );
-
+  
   const {
     align_pn: alignPositiveNegative = true,
     color_pn: colorPositiveNegative = true,
@@ -497,6 +497,7 @@ const transformProps = (
     comparison_color_scheme: comparisonColorScheme = ColorSchemeEnum.Green,
     comparison_type,
     slice_id,
+    highlighted_row_indices,
   } = formData;
   const isUsingTimeComparison =
     !isEmpty(time_compare) &&
@@ -713,6 +714,13 @@ const transformProps = (
   });
 
   const startDateOffset = chartProps.rawFormData?.start_date_offset;
+
+  const highlightedRows = (highlighted_row_indices || '')
+    .toString() // На случай, если придет не строка
+    .split(',')
+    .map((s: string) => parseInt(s.trim(), 10))
+    .filter((n: number) => !isNaN(n));
+
   return {
     height,
     width,
@@ -756,6 +764,7 @@ const transformProps = (
     hasServerPageLengthChanged,
     serverPageLength,
     slice_id,
+    highlightedRows,
   };
 };
 

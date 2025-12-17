@@ -91,6 +91,7 @@ export interface DataTableProps<D extends object> extends TableOptions<D> {
   searchOptions: SearchOption[];
   onFilteredDataChange?: (rows: Row<D>[], filterValue?: string) => void;
   onFilteredRowsChange?: (rows: D[]) => void;
+  highlightedRows?: number[];
 }
 
 export interface RenderHTMLCellProps extends HTMLProps<HTMLTableCellElement> {
@@ -135,6 +136,7 @@ export default typedMemo(function DataTable<D extends object>({
   searchOptions,
   onFilteredDataChange,
   onFilteredRowsChange,
+  highlightedRows = [],
   ...moreUseTableOptions
 }: DataTableProps<D>): JSX.Element {
   const tableHooks: PluginHook<D>[] = [
@@ -379,8 +381,20 @@ export default typedMemo(function DataTable<D extends object>({
           page.map(row => {
             prepareRow(row);
             const { key: rowKey, ...rowProps } = row.getRowProps();
+            
+            const isHighlighted = highlightedRows.includes(row.index);
+
+            const rowStyle: React.CSSProperties = isHighlighted 
+              ? { backgroundColor: '#fff3cd', color: 'inherit', fontWeight: 'bold'} 
+              : {};
+
             return (
-              <tr key={rowKey || row.id} {...rowProps} role="row">
+              <tr 
+                key={rowKey || row.id} 
+                {...rowProps} 
+                role="row"
+                style={{ ...rowProps.style, ...rowStyle }}
+              >
                 {row.cells.map(cell =>
                   cell.render('Cell', { key: cell.column.id }),
                 )}

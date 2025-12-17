@@ -335,6 +335,7 @@ export default function TableChart<D extends DataRecord = DataRecord>(
     hasServerPageLengthChanged,
     serverPageLength,
     slice_id,
+    highlightedRows,
   } = props;
 
   const comparisonColumns = useMemo(
@@ -1437,6 +1438,7 @@ export default function TableChart<D extends DataRecord = DataRecord>(
         searchOptions={searchOptions}
         onFilteredDataChange={handleFilteredDataChange}
         onFilteredRowsChange={setClientViewRows}
+        highlightedRows={highlightedRows}
       />
     </Styles>
   );

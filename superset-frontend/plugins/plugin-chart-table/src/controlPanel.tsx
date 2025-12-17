@@ -223,7 +223,7 @@ export const ROW_LIMIT_OPTIONS_TABLE = [
 ];
 
 const config: ControlPanelConfig = {
-  controlPanelSections: [
+      controlPanelSections: [
     {
       label: t('Query'),
       expanded: true,
@@ -482,6 +482,16 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         [
+            {
+              name: 'highlighted_row_indices',
+              config: {
+                type: 'TextControl',
+                label: t('Выделение строк'),
+                default: '',
+                renderTrigger: true,
+                description: t('Введите номера строк, разделенные запятой (например 0, 2, 5) для их подсветки.'),
+            },
+          },
           {
             name: 'table_timestamp_format',
             config: {
