@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -23,13 +23,22 @@ import {
   useEffect,
   useRef,
   useState,
+  useMemo,
 } from 'react';
-import { getExtensionsRegistry, QueryData, t } from '@superset-ui/core';
+import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+import {
+  DataMaskStateWithId,
+  NativeFiltersState,
+  getExtensionsRegistry,
+  QueryData,
+  t,
+} from '@superset-ui/core';
 import { css, styled, SupersetTheme, useTheme } from '@apache-superset/core/ui';
+import { Tooltip, EditableTitle, Icons } from '@superset-ui/core/components';
+
 import { useUiConfig } from 'src/components/UiConfigContext';
 import { isEmbedded } from 'src/dashboard/util/isEmbedded';
-import { Tooltip, EditableTitle, Icons } from '@superset-ui/core/components';
-import { useSelector } from 'react-redux';
 import SliceHeaderControls from 'src/dashboard/components/SliceHeaderControls';
 import { SliceHeaderControlsProps } from 'src/dashboard/components/SliceHeaderControls/types';
 import FiltersBadge from 'src/dashboard/components/FiltersBadge';
@@ -38,7 +47,6 @@ import { RootState } from 'src/dashboard/types';
 import { getSliceHeaderTooltip } from 'src/dashboard/util/getSliceHeaderTooltip';
 import { DashboardPageIdContext } from 'src/dashboard/containers/DashboardPage';
 import RowCountLabel from 'src/components/RowCountLabel';
-import { Link } from 'react-router-dom';
 
 const extensionsRegistry = getExtensionsRegistry();
 
@@ -175,7 +183,7 @@ const SliceHeader = forwardRef<HTMLDivElement, SliceHeaderProps>(
     const dashboardPageId = useContext(DashboardPageIdContext);
     const [headerTooltip, setHeaderTooltip] = useState<ReactNode | null>(null);
     const headerRef = useRef<HTMLDivElement>(null);
-    // TODO: change to indicator field after it will be implemented
+    
     const crossFilterValue = useSelector<RootState, any>(
       state => state.dataMask[slice?.slice_id]?.filterState?.value,
     );
@@ -194,20 +202,69 @@ const SliceHeader = forwardRef<HTMLDivElement, SliceHeaderProps>(
 
     const canExplore = !editMode && supersetCanExplore;
 
+    // --- Dynamic Title Logic ---
+    const nativeFilters = useSelector((state: any) =>
+      state.nativeFilters as NativeFiltersState | undefined
+    );
+
+    const dataMask = useSelector((state: any) =>
+      state.dataMask as DataMaskStateWithId
+    );
+
+    const dynamicSliceName = useMemo(() => {
+      let newTitle = sliceName;
+
+      if (!newTitle || typeof newTitle !== 'string' || !newTitle.includes('{{')) {
+        return newTitle;
+      }
+
+      const filters = nativeFilters?.filters;
+      if (!filters) return newTitle;
+
+      Object.values(filters).forEach((filter) => {
+        const filterName = filter.name;
+        const filterId = filter.id;
+
+        const escapedName = filterName?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`{{\\s*${escapedName}\\s*}}`, 'gi');
+
+        if (regex.test(newTitle)) {
+          const mask = dataMask[filterId];
+          const rawValue = mask?.filterState?.value;
+          let displayValue = '';
+
+          if (rawValue !== undefined && rawValue !== null) {
+            if (Array.isArray(rawValue)) {
+               const validValues = rawValue.map(String);
+               displayValue = validValues.length > 0 ? validValues.join(', ') : '';
+            } else {
+               displayValue = String(rawValue);
+            }
+          }
+          newTitle = newTitle.replace(regex, displayValue);
+        }
+      });
+
+      return newTitle;
+    }, [sliceName, nativeFilters, dataMask]);
+    // ---------------------------
+
     useEffect(() => {
       const headerElement = headerRef.current;
+      const titleToTooltip = dynamicSliceName;
+
       if (canExplore) {
-        setHeaderTooltip(getSliceHeaderTooltip(sliceName));
+        setHeaderTooltip(getSliceHeaderTooltip(titleToTooltip));
       } else if (
         headerElement &&
         (headerElement.scrollWidth > headerElement.offsetWidth ||
           headerElement.scrollHeight > headerElement.offsetHeight)
       ) {
-        setHeaderTooltip(sliceName ?? null);
+        setHeaderTooltip(titleToTooltip ?? null);
       } else {
         setHeaderTooltip(null);
       }
-    }, [sliceName, width, height, canExplore]);
+    }, [dynamicSliceName, width, height, canExplore]);
 
     const exploreUrl = `/explore/?dashboard_page_id=${dashboardPageId}&slice_id=${slice.slice_id}`;
 
@@ -231,15 +288,15 @@ const SliceHeader = forwardRef<HTMLDivElement, SliceHeaderProps>(
       <ChartHeaderStyles data-test="slice-header" ref={ref}>
         <div className="header-title" ref={headerRef}>
           <Tooltip title={headerTooltip}>
-            {/* this div ensures the hover event triggers correctly and prevents flickering */}
             <div>
               <EditableTitle
+                key={`${editMode ? 'edit' : 'view'}-${dynamicSliceName}`}
+                
                 title={
-                  sliceName ||
-                  (editMode
-                    ? '---' // this makes an empty title clickable
-                    : '')
+                  (editMode ? sliceName : dynamicSliceName) ||
+                  (editMode ? '---' : '')
                 }
+                
                 canEdit={editMode}
                 onSaveTitle={updateSliceName}
                 showTooltip={false}
