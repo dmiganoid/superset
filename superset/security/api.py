@@ -22,18 +22,19 @@ from flask_appbuilder import expose
 from flask_appbuilder.api import rison, safe, SQLAInterface
 from flask_appbuilder.api.schemas import get_list_schema
 from flask_appbuilder.security.decorators import permission_name, protect
-from flask_appbuilder.security.sqla.models import RegisterUser, Role
+from flask_appbuilder.security.sqla.models import Group, RegisterUser, Role, User
 from flask_wtf.csrf import generate_csrf
-from marshmallow import EXCLUDE, fields, post_load, Schema, ValidationError
+from marshmallow import EXCLUDE, fields, post_load, Schema, ValidationError, validate
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.query import Query as SqlaQuery
 
 from superset.commands.dashboard.embedded.exceptions import (
     EmbeddedDashboardNotFoundError,
 )
 from superset.commands.exceptions import ForbiddenError
 from superset.exceptions import SupersetGenericErrorException
-from superset.extensions import db, event_logger
+from superset.extensions import db, event_logger, security_manager
 from superset.security.guest_token import GuestTokenResourceType
 from superset.views.base_api import (
     BaseSupersetApi,
@@ -99,6 +100,27 @@ class RolesResponseSchema(PermissiveSchema):
 
 
 guest_token_create_schema = GuestTokenCreateSchema()
+
+
+class RoleAssignmentFilterSchema(PermissiveSchema):
+    col = fields.String(required=True)
+    opr = fields.String(required=True)
+    value = fields.Raw(required=True)
+
+
+class RoleAssignmentRequestSchema(PermissiveSchema):
+    role_ids = fields.List(fields.Integer(), required=True)
+    action = fields.String(
+        required=True, validate=validate.OneOf(["add", "replace", "remove"])
+    )
+    scope = fields.String(
+        required=True, validate=validate.OneOf(["selected", "filtered"])
+    )
+    user_ids = fields.List(fields.Integer(), allow_none=True)
+    filters = fields.List(fields.Nested(RoleAssignmentFilterSchema), allow_none=True)
+
+
+role_assignment_request_schema = RoleAssignmentRequestSchema()
 
 
 class SecurityRestApi(BaseSupersetApi):
@@ -341,6 +363,135 @@ class RoleRestAPI(BaseSupersetApi):
             return self.response_403(message=str(e))
         except Exception as e:
             return self.response_500(message=str(e))
+
+
+class RoleAssignmentRestApi(BaseSupersetApi):
+    """
+    API for bulk assigning roles to users.
+    """
+
+    resource_name = "security/roles/assignment"
+    allow_browser_login = True
+    openapi_spec_tag = "Security Roles"
+    openapi_spec_component_schemas = (RoleAssignmentRequestSchema,)
+
+    @expose("/", methods=["POST"])
+    @event_logger.log_this
+    @protect()
+    @safe
+    @statsd_metrics
+    @permission_name("update_roles_users")
+    def bulk_assign(self) -> Response:
+        """
+        Bulk assign roles to users by selected IDs or filters.
+
+        ---
+        post:
+          summary: Bulk assign roles
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: RoleAssignmentRequestSchema
+          responses:
+            200:
+              description: Assignment summary
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      affected_users:
+                        type: integer
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            403:
+              $ref: '#/components/responses/403'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        try:
+            payload = role_assignment_request_schema.load(request.json)
+            role_ids = payload["role_ids"]
+            action = payload["action"]
+            scope = payload["scope"]
+            if not role_ids:
+                return self.response_400(message="role_ids is required")
+
+            roles = security_manager.find_roles_by_id(role_ids)
+            if len(roles) != len(role_ids):
+                return self.response_400(message="Some roles do not exist")
+
+            user_query = db.session.query(User).options(joinedload(User.roles))
+
+            if scope == "selected":
+                user_ids = payload.get("user_ids") or []
+                if not user_ids:
+                    return self.response(200, affected_users=0)
+                user_query = user_query.filter(User.id.in_(user_ids))
+            else:
+                filters = payload.get("filters") or []
+                user_query = self._apply_user_filters(user_query, filters)
+
+            affected_users = self._apply_role_changes(user_query, roles, action)
+            db.session.commit()  # pylint: disable=consider-using-transaction
+            return self.response(200, affected_users=affected_users)
+        except ValidationError as error:
+            return self.response_400(message=error.messages)
+        except Exception as error:  # pragma: no cover - fallback
+            return self.response_500(message=str(error))
+
+    def _apply_user_filters(
+        self, query: SqlaQuery, filters: list[dict[str, Any]]
+    ) -> SqlaQuery:
+        for raw_filter in filters:
+            col = raw_filter.get("col")
+            opr = raw_filter.get("opr")
+            value = raw_filter.get("value")
+            if col in {"first_name", "last_name", "username", "email"}:
+                if opr != "ct" or not isinstance(value, str):
+                    raise ValidationError("Invalid text filter")
+                query = query.filter(getattr(User, col).ilike(f"%{value}%"))
+            elif col == "active":
+                if opr != "eq":
+                    raise ValidationError("Invalid active filter")
+                if isinstance(value, str):
+                    value = value.lower() == "true"
+                query = query.filter(User.active.is_(bool(value)))
+            elif col == "roles":
+                if opr not in {"rel_m_m", "eq"}:
+                    raise ValidationError("Invalid roles filter")
+                role_ids = value if isinstance(value, list) else [value]
+                query = query.filter(User.roles.any(Role.id.in_(role_ids)))
+            elif col == "groups":
+                if opr not in {"rel_m_m", "eq"}:
+                    raise ValidationError("Invalid groups filter")
+                group_ids = value if isinstance(value, list) else [value]
+                query = query.filter(User.groups.any(Group.id.in_(group_ids)))
+            else:
+                raise ValidationError("Unsupported filter column")
+        return query
+
+    def _apply_role_changes(
+        self, query: SqlaQuery, roles: list[Role], action: str
+    ) -> int:
+        affected_users = 0
+        role_ids = {role.id for role in roles}
+
+        for user in query.yield_per(200):
+            affected_users += 1
+            if action == "add":
+                existing_ids = {role.id for role in user.roles}
+                for role in roles:
+                    if role.id not in existing_ids:
+                        user.roles.append(role)
+            elif action == "remove":
+                user.roles = [role for role in user.roles if role.id not in role_ids]
+            elif action == "replace":
+                user.roles = list(roles)
+        return affected_users
 
 
 class UserRegistrationsRestAPI(BaseSupersetModelRestApi):

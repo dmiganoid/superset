@@ -179,6 +179,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.reports.logs.api import ReportExecutionLogRestApi
         from superset.row_level_security.api import RLSRestApi
         from superset.security.api import (
+            RoleAssignmentRestApi,
             RoleRestAPI,
             SecurityRestApi,
             UserRegistrationsRestAPI,
@@ -206,6 +207,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.groups import GroupsListView
         from superset.views.log.api import LogRestApi
         from superset.views.logs import ActionLogView
+        from superset.views.role_assignment import RoleAssignmentView
         from superset.views.roles import RolesListView
         from superset.views.sql_lab.views import (
             SavedQueryView,
@@ -327,6 +329,17 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
             RolesListView,
             "List Roles",
             label=_("List Roles"),
+            category="Security",
+            category_label=_("Security"),
+            menu_cond=lambda: bool(
+                appbuilder.app.config.get("SUPERSET_SECURITY_VIEW_MENU", True)
+            ),
+        )
+
+        appbuilder.add_view(
+            RoleAssignmentView,
+            "Role Assignment",
+            label="Назначение ролей",
             category="Security",
             category_label=_("Security"),
             menu_cond=lambda: bool(
@@ -483,6 +496,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
             ),
         )
         appbuilder.add_api(SecurityRestApi)
+        appbuilder.add_api(RoleAssignmentRestApi)
         #
         # Conditionally setup email views
         #
