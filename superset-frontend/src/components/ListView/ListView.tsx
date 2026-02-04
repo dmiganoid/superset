@@ -39,7 +39,6 @@ import {
   SortColumn,
   CardSortSelectOption,
   ViewModeType,
-  InternalFilter,
 } from './types';
 import { ListViewError, useListViewState } from './utils';
 
@@ -256,7 +255,6 @@ export interface ListViewProps<T extends object = any> {
   columnsForWrapText?: string[];
   enableBulkTag?: boolean;
   bulkTagResourceName?: string;
-  onFiltersChange?: (filters: InternalFilter[]) => void;
 }
 
 export function ListView<T extends object = any>({
@@ -285,7 +283,6 @@ export function ListView<T extends object = any>({
   bulkTagResourceName,
   addSuccessToast,
   addDangerToast,
-  onFiltersChange,
 }: ListViewProps<T>) {
   const {
     getTableProps,
@@ -317,11 +314,6 @@ export function ListView<T extends object = any>({
   });
   const allowBulkTagActions = bulkTagResourceName && enableBulkTag;
   const filterable = Boolean(filters.length);
-  useEffect(() => {
-    if (onFiltersChange) {
-      onFiltersChange(internalFilters);
-    }
-  }, [internalFilters, onFiltersChange]);
   if (filterable) {
     const columnAccessors = columns.reduce(
       (acc, col) => ({ ...acc, [col.id || col.accessor]: true }),

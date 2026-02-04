@@ -137,12 +137,6 @@ const RowLevelSecurityList = lazy(
       /* webpackChunkName: "RowLevelSecurityList" */ 'src/pages/RowLevelSecurityList'
     ),
 );
-const RoleAssignment = lazy(
-  () =>
-    import(
-      /* webpackChunkName: "RoleAssignment" */ 'src/pages/RoleAssignment'
-    ),
-);
 
 const RolesList = lazy(
   () => import(/* webpackChunkName: "RolesList" */ 'src/pages/RolesList'),
@@ -328,10 +322,6 @@ const isAdmin = isUserAdmin(user);
 
 if (isAdmin) {
   routes.push(
-    {
-      path: '/roles/assign/',
-      Component: RoleAssignment,
-    },
     {
       path: '/roles/',
       Component: RolesList,

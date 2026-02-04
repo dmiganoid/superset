@@ -386,6 +386,8 @@ const DashboardBuilder = () => {
   );
 
   const dashboardInfo = useSelector<RootState, any>(state => state.dashboardInfo);
+  const user = useSelector<RootState, any>(state => state.user); // Чтобы разрешить админу видеть сквозь блокировку (опционально)
+  
   const maintenanceData = useMemo(() => {
     const metadata = dashboardInfo?.metadata;
     // Данные могут быть строкой или объектом, страхуемся:
