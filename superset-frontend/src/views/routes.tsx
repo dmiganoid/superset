@@ -99,6 +99,13 @@ const ExecutionLogList = lazy(
     ),
 );
 
+const BulkRolePage = lazy(
+  () =>
+    import(
+      'src/pages/BulkRole'
+    ),
+);
+
 const Chart = lazy(
   () => import(/* webpackChunkName: "Chart" */ 'src/pages/Chart'),
 );
@@ -302,6 +309,10 @@ export const routes: Routes = [
     path: '/registrations/',
     Component: UserRegistrations,
   },
+  {
+    path: '/bulkrole/panel/',
+    Component: BulkRolePage,
+  }
 ];
 
 if (isFeatureEnabled(FeatureFlag.TaggingSystem)) {

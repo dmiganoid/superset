@@ -223,6 +223,8 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.user_registrations import UserRegistrationsView
         from superset.views.users.api import CurrentUserRestApi, UserRestApi
         from superset.views.users_list import UsersListView
+        
+        from superset.views.bulk_roles import BulkRoleView
 
         set_app_error_handlers(self.superset_app)
         self.register_request_handlers()
@@ -281,6 +283,14 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         app_root = appbuilder.app.config["APPLICATION_ROOT"]
         if app_root.endswith("/"):
             app_root = app_root.rstrip("/")
+
+        appbuilder.add_view(
+            BulkRoleView,
+            "Mass Role Assign",
+            href="/bulkrole/panel/",
+            icon="fa-users",
+            category="Security"
+        )
 
         appbuilder.add_link(
             "Home",
@@ -802,6 +812,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         appbuilder.indexview = SupersetIndexView
         appbuilder.security_manager_class = custom_sm
         appbuilder.init_app(self.superset_app, db.session)
+
 
     def configure_url_map_converters(self) -> None:
         #
