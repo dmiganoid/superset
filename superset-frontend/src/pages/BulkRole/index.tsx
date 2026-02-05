@@ -182,12 +182,12 @@ export default function BulkRolePage() {
         <div style={styles.grid}>
             <div>
                 <label style={styles.label}>Username</label>
-                <input style={styles.input} placeholder="dima_ivanov" 
+                <input style={styles.input} placeholder="IvanovII" 
                        value={fUsername} onChange={e => setFUsername(e.target.value)} onKeyDown={onKeyDown}/>
             </div>
             <div>
                 <label style={styles.label}>Email</label>
-                <input style={styles.input} placeholder="@company.com" 
+                <input style={styles.input} placeholder="ivanovii@rusal.com" 
                        value={fEmail} onChange={e => setFEmail(e.target.value)} onKeyDown={onKeyDown}/>
             </div>
             <div>
@@ -196,11 +196,11 @@ export default function BulkRolePage() {
             </div>
             <div>
                 <label style={styles.label}>Имя</label>
-                <input style={styles.input} placeholder="Dima" value={fFirstName} onChange={e => setFFirstName(e.target.value)} onKeyDown={onKeyDown}/>
+                <input style={styles.input} placeholder="Иван" value={fFirstName} onChange={e => setFFirstName(e.target.value)} onKeyDown={onKeyDown}/>
             </div>
             <div>
                 <label style={styles.label}>Фамилия</label>
-                <input style={styles.input} placeholder="Ivanov" value={fLastName} onChange={e => setFLastName(e.target.value)} onKeyDown={onKeyDown}/>
+                <input style={styles.input} placeholder="Иванов" value={fLastName} onChange={e => setFLastName(e.target.value)} onKeyDown={onKeyDown}/>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                 <Button buttonStyle="secondary" onClick={handleSearchUsers} loading={searching} disabled={searching} style={{ width: '100%' }}>
