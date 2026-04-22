@@ -625,7 +625,7 @@ const Header = () => {
           visible={!editMode}
         />
       ),
-      !editMode && !isEmbedded && metadataBar,
+      !editMode && !isEmbedded && userCanEdit && metadataBar,
     ],
     [
       boundActionCreators.savePublished,
