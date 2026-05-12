@@ -64,6 +64,8 @@ const MENU_KEYS = {
   EXPORT_TO_CSV: 'export_to_csv',
   EXPORT_TO_JSON: 'export_to_json',
   EXPORT_TO_XLSX: 'export_to_xlsx',
+  EXPORT_TO_XLSX_WITH_FILTERS: 'export_to_xlsx_with_filters',
+  EXPORT_CURRENT_XLSX_WITH_FILTERS: 'export_current_xlsx_with_filters',
   EXPORT_ALL_SCREENSHOT: 'export_all_screenshot',
   EXPORT_CURRENT_TO_CSV: 'export_current_to_csv',
   EXPORT_CURRENT_TO_JSON: 'export_current_to_json',
@@ -299,16 +301,20 @@ export const useExploreAdditionalActionsMenu = (
   );
 
   const exportExcel = useCallback(
-    () =>
-      canDownloadCSV
-        ? exportChart({
-            formData: latestQueryFormData,
-            resultType: 'results',
-            resultFormat: 'xlsx',
-          })
-        : null,
-    [canDownloadCSV, latestQueryFormData],
-  );
+  (includeDashboardFilters = false) =>
+    canDownloadCSV
+      ? exportChart({
+          formData: {
+            ...latestQueryFormData,
+            include_dashboard_filters_in_excel: includeDashboardFilters,
+          },
+          resultType: 'results',
+          resultFormat: 'xlsx',
+        })
+      : null,
+  [canDownloadCSV, latestQueryFormData],
+);
+
 
   const copyLink = useCallback(async () => {
     try {
@@ -611,12 +617,29 @@ export const useExploreAdditionalActionsMenu = (
         icon: <Icons.FileOutlined />,
         disabled: !canDownloadCSV,
         onClick: () => {
-          exportExcel();
+          exportExcel(false);
           setIsDropdownVisible(false);
           dispatch(
             logEvent(LOG_ACTIONS_CHART_DOWNLOAD_AS_XLS, {
               chartId: slice?.slice_id,
               chartName: slice?.slice_name,
+            }),
+          );
+        },
+      },
+      {
+        key: MENU_KEYS.EXPORT_TO_XLSX_WITH_FILTERS,
+        label: t('Export to Excel (with dashboard filters)'),
+        icon: <Icons.FileOutlined />,
+        disabled: !canDownloadCSV,
+        onClick: () => {
+          exportExcel(true);
+          setIsDropdownVisible(false);
+          dispatch(
+            logEvent(LOG_ACTIONS_CHART_DOWNLOAD_AS_XLS, {
+              chartId: slice?.slice_id,
+              chartName: slice?.slice_name,
+              includeDashboardFilters: true,
             }),
           );
         },
@@ -729,7 +752,7 @@ export const useExploreAdditionalActionsMenu = (
             );
           } else {
             // Server path (respects backend filters/pagination)
-            await exportExcel();
+            await exportExcel(false);
           }
           setIsDropdownVisible(false);
           dispatch(

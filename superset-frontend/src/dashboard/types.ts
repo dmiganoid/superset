@@ -310,4 +310,6 @@ export enum MenuKeys {
   ManageEmailReports = 'manage_email_reports',
   ExportPivotXlsx = 'export_pivot_xlsx',
   EmbedCode = 'embed_code',
+  ExportXlsxWithFilters = 'export_xlsx_with_filters',
+  ExportFullXlsxWithFilters = 'export_full_xlsx_with_filters',
 }
