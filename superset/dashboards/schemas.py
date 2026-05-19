@@ -144,6 +144,9 @@ class DashboardJSONMetadataSchema(Schema):
     chart_configuration = fields.Dict()
     maintenance_mode = fields.Boolean(description="Show maintenance overlay")
     maintenance_message = fields.String(description="Message to show in maintenance mode")
+
+    data_warning_mode = fields.Boolean(description="Show data warning banner")
+    data_warning_message = fields.String(description="Message to show in data warning mode")
     # global_chart_configuration keeps data about global cross-filter scoping
     # for charts - can be overridden by chart_configuration for each chart
     global_chart_configuration = fields.Dict()

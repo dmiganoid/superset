@@ -658,6 +658,46 @@ const PropertiesModal = ({
        return false;
      }
   };
+  
+  const getIsDataWarning = () => {
+    try {
+      const meta = jsonMetadata ? JSON.parse(jsonMetadata) : {};
+      return !!meta.data_warning_mode;
+    } catch {
+      return false;
+    }
+  };
+
+  const onDataWarningChange = (checked: boolean) => {
+    const currentMetaString = jsonMetadata || '{}';
+    let metaObj: any = {};
+
+    try {
+      metaObj = JSON.parse(currentMetaString);
+    } catch (error) {
+      metaObj = {};
+    }
+
+    metaObj['data_warning_mode'] = checked;
+
+    if (checked && !metaObj['data_warning_message']) {
+      metaObj['data_warning_message'] =
+        'Внимание: данные на дашборде могут быть неактуальными или содержать ошибки.';
+    }
+
+    let newJsonString = '';
+
+    try {
+      newJsonString = jsonStringify(metaObj);
+    } catch (e) {
+      newJsonString = JSON.stringify(metaObj, null, 2);
+    }
+
+    setJsonMetadata(newJsonString);
+    form.setFieldsValue({
+      json_metadata: newJsonString,
+    });
+  };
 
 
   return (
@@ -716,20 +756,44 @@ const PropertiesModal = ({
                 />
               ),
               children: (
-                 <div style={{ padding: '10px 0' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                     <div>
-                       <Typography.Text strong>{t('Maintenance Mode')}</Typography.Text>
-                       <div style={{ color: '#999', fontSize: '12px' }}>
-                         {t('If enabled, users will see a maintenance overlay instead of charts.')}
-                       </div>
-                     </div>
-                     <Switch
-                       checked={getIsMaintenance()}
-                       onChange={onMaintenanceChange}
-                     />
-                   </div>
-                 </div>
+                <div style={{ padding: '10px 0' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div>
+                      <strong>{t('Maintenance Mode')}</strong>
+                      <div style={{ color: '#999', fontSize: '12px' }}>
+                        Скрывает графики и показывает заглушку.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={getIsMaintenance()}
+                      onChange={onMaintenanceChange}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div>
+                      <strong>{t('Data Warning')}</strong>
+                      <div style={{ color: '#999', fontSize: '12px' }}>
+                        Показывает предупреждение, но не скрывает дашборд.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={getIsDataWarning()}
+                      onChange={onDataWarningChange}
+                    />
+                  </div>
+                </div>
               ),
             },
             // --- КОНЕЦ ВСТАВКИ ---

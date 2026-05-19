@@ -403,6 +403,22 @@ const DashboardBuilder = () => {
     return null;
   }, [dashboardInfo]);
 
+  const dataWarningData = useMemo(() => {
+    const metadata = dashboardInfo?.metadata;
+    if (!metadata) return null;
+
+    if (metadata.data_warning_mode) {
+      return {
+        isEnabled: true,
+        message:
+          metadata.data_warning_message ||
+          'Внимание: данные на дашборде могут быть неактуальными или содержать ошибки.',
+      };
+    }
+
+    return null;
+  }, [dashboardInfo]);
+
   const handleChangeTab = useCallback(
     ({ pathToTabIndex }: { pathToTabIndex: string[] }) => {
       dispatch(setDirectPathToChild(pathToTabIndex));
@@ -687,6 +703,66 @@ const DashboardBuilder = () => {
           data-test="dashboard-content-wrapper"
           className={cx('dashboard', editMode && 'dashboard--editing')}
         >
+           {dataWarningData?.isEnabled &&
+            !editMode &&
+            !maintenanceData?.isMaintenance &&
+            showDashboard && (
+              <div
+                role="alert"
+                style={{
+                  margin: '12px 16px 0',
+                  padding: '14px 18px',
+                  borderRadius: 8,
+                  border: '1px solid #ff4d4f',
+                  background: '#fff1f0',
+                  color: '#5c0011',
+                  boxShadow: '0 2px 8px rgba(255, 77, 79, 0.12)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    minWidth: 28,
+                    borderRadius: '50%',
+                    background: '#ff4d4f',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: 16,
+                    lineHeight: 1,
+                  }}
+                >
+                  !
+                </div>
+
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 14,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Предупреждение
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {dataWarningData.message}
+                  </div>
+                </div>
+              </div>
+            )}
           <StyledDashboardContent
             className="dashboard-content"
             editMode={editMode}
