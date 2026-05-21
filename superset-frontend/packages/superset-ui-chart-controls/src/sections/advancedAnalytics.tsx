@@ -115,6 +115,7 @@ export const advancedAnalyticsControls: ControlPanelSectionConfig = {
             ['1 week ago', t('1 week ago')],
             ['28 days ago', t('28 days ago')],
             ['30 days ago', t('30 days ago')],
+            ['1 month ago', t('1 month ago')],
             ['52 weeks ago', t('52 weeks ago')],
             ['1 year ago', t('1 year ago')],
             ['104 weeks ago', t('104 weeks ago')],

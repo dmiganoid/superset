@@ -82,6 +82,7 @@ import { HandlebarsChartPlugin } from '@superset-ui/plugin-chart-handlebars';
 import { FilterPlugins } from 'src/constants';
 import AgGridTableChartPlugin from '@superset-ui/plugin-chart-ag-grid-table';
 import TimeTableChartPlugin from '../TimeTable';
+import { RankFlowChartPlugin } from '../../../plugins/plugin-chart-rank-flow/src';
 
 export default class MainPreset extends Preset {
   constructor() {
@@ -168,6 +169,7 @@ export default class MainPreset extends Preset {
         new SelectFilterPlugin().configure({ key: FilterPlugins.Select }),
         new RangeFilterPlugin().configure({ key: FilterPlugins.Range }),
         new TimeFilterPlugin().configure({ key: FilterPlugins.Time }),
+        new RankFlowChartPlugin().configure({ key: 'rank-flow' }),
         new TimeColumnFilterPlugin().configure({
           key: FilterPlugins.TimeColumn,
         }),
