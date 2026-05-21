@@ -164,19 +164,29 @@ export default function RankFlow(props: RankFlowTransformedProps) {
     const scaledNodeWidth = nodeWidth * safeZoom;
     const scaledNodeHeight = nodeHeight * safeZoom;
     const scaledRowGap = rowGap * safeZoom;
-    const scaledColumnGap = minColumnGap * safeZoom;
 
     const maxRank =
       nodes.length === 0 ? 0 : Math.max(...nodes.map(node => node.rank));
 
-    const naturalContentWidth =
+    const designWidth = 900;
+
+    const adaptiveBaseGap =
+      stages.length > 1
+        ? Math.max(0, designWidth - paddingX * 2 - scaledNodeWidth) /
+          (stages.length - 1)
+        : 0;
+
+    const gapRatio = minColumnGap / 200;
+
+    const columnGap =
+      stages.length > 1
+        ? adaptiveBaseGap * gapRatio
+        : 0;
+
+    const contentWidth =
       paddingX * 2 +
       scaledNodeWidth +
-      Math.max(0, stages.length - 1) * scaledColumnGap;
-
-    const contentWidth = Math.max(width, naturalContentWidth);
-
-    const columnGap = scaledColumnGap;
+      Math.max(0, stages.length - 1) * columnGap;
 
     const naturalContentHeight =
       plotTop +
@@ -260,10 +270,11 @@ export default function RankFlow(props: RankFlowTransformedProps) {
 
       <SvgWrapper>
         <svg
-          width={layout.contentWidth}
+          width="100%"
           height={layout.contentHeight}
           viewBox={`0 0 ${layout.contentWidth} ${layout.contentHeight}`}
           role="img"
+          preserveAspectRatio="xMidYMin meet"
           style={{ display: 'block' }}
         >
           {layout.positionedStages.map(stage => (

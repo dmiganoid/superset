@@ -32,9 +32,10 @@ export type RankFlowNode = {
   id: string;
   flow: string;
   flowName: string;
+  groupValues: Record<string, string>;
   step: number;
-  stageLabel: string;
   rank: number;
+  stageLabel: string;
   value: number;
   valueFormatted: string;
   color: string;

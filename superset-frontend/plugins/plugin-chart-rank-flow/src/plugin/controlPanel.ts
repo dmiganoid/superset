@@ -69,7 +69,7 @@ const controlPanel: ControlPanelConfig = {
               type: 'SliderControl',
               label: t('Расстояние между столбцами'),
               default: 200,
-              min: 150,
+              min: 100,
               max: 350,
               step: 5,
               renderTrigger: true,
