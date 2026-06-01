@@ -169,7 +169,6 @@ export default class MainPreset extends Preset {
         new SelectFilterPlugin().configure({ key: FilterPlugins.Select }),
         new RangeFilterPlugin().configure({ key: FilterPlugins.Range }),
         new TimeFilterPlugin().configure({ key: FilterPlugins.Time }),
-        new RankFlowChartPlugin().configure({ key: 'rank-flow' }),
         new TimeColumnFilterPlugin().configure({
           key: FilterPlugins.TimeColumn,
         }),

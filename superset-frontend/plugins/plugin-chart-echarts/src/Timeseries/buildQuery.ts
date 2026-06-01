@@ -64,14 +64,26 @@ export default function buildQuery(formData: QueryFormData) {
 
      */
     // only add series limit metric if it's explicitly needed e.g. for sorting
-    const extra_metrics = extractExtraMetrics(formData);
+    const extraMetrics = extractExtraMetrics(formData);
+
+    const { metrics, tooltipMetrics } = formData;
+
+    const queryMetrics = [
+      ...ensureIsArray(metrics),
+      ...ensureIsArray(tooltipMetrics),
+    ];
+
+    const queryObject = {
+      ...baseQueryObject,
+      metrics: [...queryMetrics, ...extraMetrics],
+    };
 
     const pivotOperatorInRuntime: PostProcessingPivot = isTimeComparison(
       formData,
-      baseQueryObject,
+      queryObject,
     )
-      ? timeComparePivotOperator(formData, baseQueryObject)
-      : pivotOperator(formData, baseQueryObject);
+      ? timeComparePivotOperator(formData, queryObject)
+      : pivotOperator(formData, queryObject);
 
     const columns = [
       ...(isXAxisSet(formData) ? ensureIsArray(getXAxisColumn(formData)) : []),
@@ -84,8 +96,8 @@ export default function buildQuery(formData: QueryFormData) {
 
     return [
       {
-        ...baseQueryObject,
-        metrics: [...(baseQueryObject.metrics || []), ...extra_metrics],
+        ...queryObject,
+        metrics: [...queryMetrics, ...extraMetrics],
         columns,
         series_columns: groupby,
         ...(isXAxisSet(formData) ? {} : { is_timeseries: true }),

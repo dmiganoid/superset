@@ -157,6 +157,7 @@ export default function transformProps(
     markerEnabled,
     markerSize,
     metrics,
+    tooltipMetrics,
     minorSplitLine,
     minorTicks,
     onlyTotal,
@@ -235,9 +236,12 @@ export default function transformProps(
       legendState,
     },
   );
-  const extraMetricLabels = extractExtraMetrics(chartProps.rawFormData).map(
-    getMetricLabel,
-  );
+  const tooltipMetricLabels = ensureIsArray(tooltipMetrics).map(getMetricLabel);
+
+  const extraMetricLabels = [
+    ...extractExtraMetrics(chartProps.rawFormData).map(getMetricLabel),
+    ...tooltipMetricLabels,
+  ];
 
   const isMultiSeries = groupBy.length || metrics?.length > 1;
   const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
@@ -688,6 +692,24 @@ export default function transformProps(
           }
           rows.push(totalRow);
         }
+
+        if (tooltipMetricLabels.length) {
+          const sourceRow = rebasedData.find(row => {
+            const rowValue = row[xAxisLabel];
+            return String(rowValue) === String(xValue);
+          });
+
+          if (sourceRow) {
+            tooltipMetricLabels.forEach(label => {
+              const value = sourceRow[label];
+
+              if (value !== undefined && value !== null) {
+                rows.push([label, defaultFormatter.format(value as number)]);
+              }
+            });
+          }
+        }
+
         return tooltipHtml(rows, tooltipFormatter(xValue), focusedRow);
       },
     },

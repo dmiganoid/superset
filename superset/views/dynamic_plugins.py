@@ -16,14 +16,16 @@
 # under the License.
 from typing import Optional
 
-from flask import make_response, Response
-from flask_appbuilder import ModelView
+from flask import jsonify, make_response, Response
+from flask_appbuilder import expose, ModelView, permission_name
 from flask_appbuilder.hooks import before_request
 from flask_appbuilder.models.sqla.interface import SQLAInterface
+from flask_appbuilder.security.decorators import has_access
 from flask_babel import lazy_gettext as _
 
 from superset import is_feature_enabled
 from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP
+from superset.extensions import db
 from superset.models.dynamic_plugins import DynamicPlugin
 
 
@@ -65,3 +67,23 @@ class DynamicPluginsView(ModelView):
         if not is_feature_enabled("DYNAMIC_PLUGINS"):
             return make_response("Not found", 404)
         return None
+
+    @expose("/api/read", methods=("GET",))
+    @has_access
+    @permission_name("list")
+    def read(self) -> Response:
+        """Return dynamic plugin metadata consumed by the frontend loader."""
+        plugins = db.session.query(DynamicPlugin).all()
+        return jsonify(
+            {
+                "result": [
+                    {
+                        "id": plugin.id,
+                        "name": plugin.name,
+                        "key": plugin.key,
+                        "bundle_url": plugin.bundle_url,
+                    }
+                    for plugin in plugins
+                ],
+            }
+        )

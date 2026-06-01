@@ -153,6 +153,17 @@ const config: ControlPanelConfig = {
         [xAxisLabelInterval],
         [forceMaxInterval],
         ...richTooltipSection,
+        [
+          {
+            name: 'tooltipMetrics',
+            config: {
+              ...sharedControls.metrics,
+              label: t('Метрики во всплывающей подсказке'),
+              description: t('Дополнительные метрики для демонстрации в подсказке'),
+              validators: [],
+            },
+          },
+        ],
         // eslint-disable-next-line react/jsx-key
         [<ControlSubSectionHeader>{t('Y Axis')}</ControlSubSectionHeader>],
         ['y_axis_format'],

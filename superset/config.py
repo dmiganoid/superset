@@ -527,7 +527,7 @@ CURRENCIES = ["USD", "EUR", "GBP", "INR", "MXN", "JPY", "CNY"]
 DEFAULT_FEATURE_FLAGS: dict[str, bool] = {
     # When using a recent version of Druid that supports JOINs turn this on
     "DRUID_JOINS": False,
-    "DYNAMIC_PLUGINS": False,
+    "DYNAMIC_PLUGINS": True,
     "ENABLE_TEMPLATE_PROCESSING": True,
     # Allow for javascript controls components
     # this enables programmers to customize certain charts (like the
