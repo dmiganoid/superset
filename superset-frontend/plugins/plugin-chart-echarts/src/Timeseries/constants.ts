@@ -88,6 +88,17 @@ export const DEFAULT_FORM_DATA: EchartsTimeseriesFormData = {
   orientation: OrientationType.Vertical,
   sort_series_type: 'sum',
   sort_series_ascending: false,
+
+  rangeColorEnabled: false,
+  rangeColorAxis: 'y',
+  rangeColorBounds: [null, null],
+  rangeInsideColor: { r: 44, g: 160, b: 44, a: 1 },
+  rangeOutsideColor: { r: 214, g: 39, b: 40, a: 1 },
+  rangeShowBoundaries: true,
+  rangeColorXSeparatorEnabled: false,
+  rangeColorXSeparatorMetric: null,
+  rangeColorPastColor: { r: 160, g: 160, b: 160, a: 1 },
+  rangeColorXSeparatorColor: { r: 90, g: 90, b: 90, a: 1 },
 };
 
 export const TIME_SERIES_DESCRIPTION_TEXT: string = t(

@@ -109,6 +109,64 @@ import {
   getXAxisFormatter,
   getYAxisFormatter,
 } from '../utils/formatters';
+import {
+  appendMarkLinesToFirstLineSeries,
+  applyRangeColoring,
+  createRangeBoundaryMarkLines,
+  createXSeparatorMarkLine,
+} from './utils/rangeColor';
+
+function getFirstComparableMetricValue(
+  rows: Record<string, unknown>[],
+  metricLabel?: string,
+): number | undefined {
+  if (!metricLabel) {
+    return undefined;
+  }
+
+  for (const row of rows) {
+    const value = row[metricLabel];
+
+    if (value === null || value === undefined || value === '') {
+      continue;
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (value instanceof Date) {
+      const timestamp = value.getTime();
+      if (Number.isFinite(timestamp)) {
+        return timestamp;
+      }
+    }
+
+    if (typeof value === 'string') {
+      const asNumber = Number(value);
+      if (Number.isFinite(asNumber)) {
+        return asNumber;
+      }
+
+      const asDate = Date.parse(value);
+      if (Number.isFinite(asDate)) {
+        return asDate;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+const RANGE_SPLIT_SUFFIX_REGEXP = /__(range_past|range_future)$/;
+
+function cleanRangeSplitSeriesName(seriesName: string) {
+  return seriesName.replace(RANGE_SPLIT_SUFFIX_REGEXP, '');
+}
+
+function isRangeSplitSeriesName(seriesName: string) {
+  return RANGE_SPLIT_SUFFIX_REGEXP.test(seriesName);
+}
 
 export default function transformProps(
   chartProps: EchartsTimeseriesChartProps,
@@ -201,7 +259,25 @@ export default function transformProps(
     yAxisTitlePosition,
     zoomable,
     stackDimension,
+
+    rangeColorEnabled,
+    rangeColorAxis,
+    rangeColorBounds,
+    rangeInsideColor,
+    rangeOutsideColor,
+    rangeShowBoundaries,
+    rangeColorXSeparatorEnabled,
+    rangeColorXSeparatorMetric,
+    rangeColorPastColor,
+    rangeColorXSeparatorColor,
   }: EchartsTimeseriesFormData = { ...DEFAULT_FORM_DATA, ...formData };
+
+  const rawFormData = chartProps.rawFormData as Record<string, unknown>;
+
+  const xSeparatorMetric =
+    rangeColorXSeparatorMetric ??
+    rawFormData.range_color_x_separator_metric ??
+    rawFormData.rangeColorXSeparatorMetric;
 
   const refs: Refs = {};
   const groupBy = ensureIsArray(groupby);
@@ -238,10 +314,29 @@ export default function transformProps(
   );
   const tooltipMetricLabels = ensureIsArray(tooltipMetrics).map(getMetricLabel);
 
+  const separatorMetricLabels = ensureIsArray(xSeparatorMetric)
+    .filter(Boolean)
+    .map(getMetricLabel);
+
   const extraMetricLabels = [
     ...extractExtraMetrics(chartProps.rawFormData).map(getMetricLabel),
     ...tooltipMetricLabels,
+    ...separatorMetricLabels,
   ];
+
+  const xSeparatorMetricLabel = separatorMetricLabels[0];
+
+  const xSeparatorDisplayLabel = xSeparatorMetricLabel
+    ? verboseMap[xSeparatorMetricLabel] || xSeparatorMetricLabel
+    : undefined;
+
+  const xSeparatorValue =
+    rangeColorXSeparatorEnabled && xSeparatorMetricLabel
+      ? getFirstComparableMetricValue(
+        rebasedData as Record<string, unknown>[],
+        xSeparatorMetricLabel,
+      )
+      : undefined;
 
   const isMultiSeries = groupBy.length || metrics?.length > 1;
   const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
@@ -344,10 +439,10 @@ export default function transformProps(
         formatter: forcePercentFormatter
           ? percentFormatter
           : (getCustomFormatter(
-              customFormatters,
-              metrics,
-              labelMap?.[seriesName]?.[0],
-            ) ?? defaultFormatter),
+            customFormatters,
+            metrics,
+            labelMap?.[seriesName]?.[0],
+          ) ?? defaultFormatter),
         showValue,
         onlyTotal,
         totalStackedValues: sortedTotalValues,
@@ -385,6 +480,65 @@ export default function transformProps(
 
     series.unshift(baselineSeries);
   }
+
+  let rangeColorVisualMap: EChartsCoreOption['visualMap'];
+
+  const canApplyRangeFeatures = Boolean(!stack && !area);
+
+  const shouldApplyRangeColor = Boolean(
+    rangeColorEnabled && canApplyRangeFeatures,
+  );
+
+  const shouldApplyXSeparator = Boolean(
+    rangeColorXSeparatorEnabled &&
+    xSeparatorValue !== undefined &&
+    canApplyRangeFeatures,
+  );
+
+  if (shouldApplyRangeColor || shouldApplyXSeparator) {
+    const result = applyRangeColoring({
+      series,
+      enabled: shouldApplyRangeColor,
+      rangeAxis: rangeColorAxis || 'y',
+      bounds: rangeColorBounds,
+      isHorizontal,
+      insideColor: rangeInsideColor,
+      outsideColor: rangeOutsideColor,
+      xSeparatorEnabled: shouldApplyXSeparator,
+      xSeparatorValue,
+      pastColor: rangeColorPastColor,
+    });
+
+    series.splice(0, series.length, ...result.series);
+    rangeColorVisualMap = result.visualMap;
+  }
+
+  const markLines = [
+    ...createRangeBoundaryMarkLines({
+      enabled: shouldApplyRangeColor && rangeShowBoundaries,
+      rangeAxis: rangeColorAxis || 'y',
+      bounds: rangeColorBounds,
+      isHorizontal,
+    }),
+  ];
+
+  const separatorMarkLine = createXSeparatorMarkLine({
+    enabled: shouldApplyXSeparator,
+    separatorValue: xSeparatorValue,
+    isHorizontal,
+    color: rangeColorXSeparatorColor,
+    label: xSeparatorDisplayLabel,
+  });
+
+  if (separatorMarkLine) {
+    markLines.push(separatorMarkLine);
+  }
+
+  if (markLines.length) {
+    const nextSeries = appendMarkLinesToFirstLineSeries(series, markLines);
+    series.splice(0, series.length, ...nextSeries);
+  }
+
   const selectedValues = (filterState.selectedValues || []).reduce(
     (acc: Record<string, number>, selectedValue: string) => {
       const index = series.findIndex(({ name }) => name === selectedValue);
@@ -495,8 +649,8 @@ export default function transformProps(
         : String;
 
   const {
-    setDataMask = () => {},
-    setControlValue = () => {},
+    setDataMask = () => { },
+    setControlValue = () => { },
     onContextMenu,
     onLegendStateChanged,
     onLegendScroll,
@@ -541,14 +695,14 @@ export default function transformProps(
     minInterval:
       xAxisType === AxisType.Time && timeGrainSqla && !forceMaxInterval
         ? TIMEGRAIN_TO_TIMESTAMP[
-            timeGrainSqla as keyof typeof TIMEGRAIN_TO_TIMESTAMP
-          ]
+        timeGrainSqla as keyof typeof TIMEGRAIN_TO_TIMESTAMP
+        ]
         : 0,
     maxInterval:
       xAxisType === AxisType.Time && timeGrainSqla && forceMaxInterval
         ? TIMEGRAIN_TO_TIMESTAMP[
-            timeGrainSqla as keyof typeof TIMEGRAIN_TO_TIMESTAMP
-          ]
+        timeGrainSqla as keyof typeof TIMEGRAIN_TO_TIMESTAMP
+        ]
         : undefined,
     ...getMinAndMaxFromBounds(
       xAxisType,
@@ -594,6 +748,7 @@ export default function transformProps(
     },
     xAxis,
     yAxis,
+    visualMap: rangeColorVisualMap,
     tooltip: {
       ...getDefaultTooltip(refs),
       show: !inContextMenu,
@@ -648,21 +803,45 @@ export default function transformProps(
           allowTotal && !forcePercentFormatter && showTooltipPercentage;
         const keys = Object.keys(forecastValues);
         let focusedRow;
+        const displayedRangeSplitSeries = new Set<string>();
+
         sortedKeys
           .filter(key => keys.includes(key))
           .forEach(key => {
             const value = forecastValues[key];
+
+            const displaySeriesName = cleanRangeSplitSeriesName(key);
+            const isRangeSplitSeries = isRangeSplitSeriesName(key);
+
+            const hasTooltipValue =
+              value.observation !== undefined ||
+              value.forecastTrend !== undefined ||
+              value.forecastLower !== undefined ||
+              value.forecastUpper !== undefined;
+
+            if (isRangeSplitSeries && !hasTooltipValue) {
+              return;
+            }
+
+            if (
+              isRangeSplitSeries &&
+              displayedRangeSplitSeries.has(displaySeriesName)
+            ) {
+              return;
+            }
+
             if (value.observation === 0 && stack) {
               return;
             }
+
             const row = formatForecastTooltipSeries({
               ...value,
-              seriesName: key,
+              seriesName: displaySeriesName,
               formatter,
             });
 
             const annotationRow = annotationLayers.some(
-              item => item.name === key,
+              item => item.name === key || item.name === displaySeriesName,
             );
 
             if (
@@ -674,8 +853,14 @@ export default function transformProps(
                 percentFormatter.format(value.observation / (total || 1)),
               );
             }
+
             rows.push(row);
-            if (key === focusedSeries) {
+
+            if (isRangeSplitSeries) {
+              displayedRangeSplitSeries.add(displaySeriesName);
+            }
+
+            if (key === focusedSeries || displaySeriesName === focusedSeries) {
               focusedRow = rows.length - 1;
             }
           });
@@ -724,10 +909,12 @@ export default function transformProps(
         padding,
       ),
       scrollDataIndex: legendIndex || 0,
-      data: legendData.sort((a: string, b: string) => {
-        if (!legendSort) return 0;
-        return legendSort === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
-      }) as string[],
+      data: [...legendData]
+        .map(String)
+        .sort((a, b) => {
+          if (!legendSort) return 0;
+          return legendSort === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+        }),
     },
     series: dedupSeries(reorderForecastSeries(series) as SeriesOption[]),
     toolbox: {
@@ -746,26 +933,26 @@ export default function transformProps(
     },
     dataZoom: zoomable
       ? [
-          {
-            type: 'slider',
-            start: TIMESERIES_CONSTANTS.dataZoomStart,
-            end: TIMESERIES_CONSTANTS.dataZoomEnd,
-            bottom: TIMESERIES_CONSTANTS.zoomBottom,
-            yAxisIndex: isHorizontal ? 0 : undefined,
-          },
-          {
-            type: 'inside',
-            yAxisIndex: 0,
-            zoomOnMouseWheel: false,
-            moveOnMouseWheel: true,
-          },
-          {
-            type: 'inside',
-            xAxisIndex: 0,
-            zoomOnMouseWheel: false,
-            moveOnMouseWheel: true,
-          },
-        ]
+        {
+          type: 'slider',
+          start: TIMESERIES_CONSTANTS.dataZoomStart,
+          end: TIMESERIES_CONSTANTS.dataZoomEnd,
+          bottom: TIMESERIES_CONSTANTS.zoomBottom,
+          yAxisIndex: isHorizontal ? 0 : undefined,
+        },
+        {
+          type: 'inside',
+          yAxisIndex: 0,
+          zoomOnMouseWheel: false,
+          moveOnMouseWheel: true,
+        },
+        {
+          type: 'inside',
+          xAxisIndex: 0,
+          zoomOnMouseWheel: false,
+          moveOnMouseWheel: true,
+        },
+      ]
       : [],
   };
 

@@ -68,6 +68,147 @@ const config: ControlPanelConfig = {
       controlSetRows: [
         ...seriesOrderSection,
         ['color_scheme'],
+        [
+          {
+            name: 'range_color_enabled',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Color line by range'),
+              renderTrigger: true,
+              default: false,
+              description: t(
+                'Color line depending on whether X or Y value is inside selected bounds.',
+              ),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_color_axis',
+            config: {
+              type: 'SelectControl',
+              label: t('Range axis'),
+              renderTrigger: true,
+              clearable: false,
+              default: 'y',
+              choices: [
+                ['y', t('Y range / horizontal boundaries')],
+                ['x', t('X range / vertical boundaries')],
+              ],
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_enabled?.value),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_color_bounds',
+            config: {
+              type: 'BoundsControl',
+              label: t('Range bounds'),
+              renderTrigger: true,
+              default: [null, null],
+              description: t(
+                'For Y range use numbers. For X range use numbers or date strings.',
+              ),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_enabled?.value),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_inside_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Inside range color'),
+              renderTrigger: true,
+              default: { r: 44, g: 160, b: 44, a: 1 },
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_enabled?.value),
+            },
+          },
+          {
+            name: 'range_outside_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Outside range color'),
+              renderTrigger: true,
+              default: { r: 214, g: 39, b: 40, a: 1 },
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_enabled?.value),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_show_boundaries',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Show boundary lines'),
+              renderTrigger: true,
+              default: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_enabled?.value),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_color_x_separator_enabled',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Use X separator'),
+              renderTrigger: true,
+              default: false,
+              description: t(
+                'Draw a vertical separator on the X axis. Values before the separator are shown in gray, and range coloring is applied after it.',
+              ),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_color_x_separator_metric',
+            config: {
+              ...sharedControls.metrics,
+              type: 'MetricsControl',
+              label: t('X separator value'),
+              multi: false,
+              validators: [],
+              renderTrigger: true,
+              description: t(
+                'Metric or SQL expression that returns separator X value. For time axis, return a date or timestamp. For numeric axis, return a number.',
+              ),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_x_separator_enabled?.value),
+            },
+          },
+        ],
+        [
+          {
+            name: 'range_color_past_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Past color'),
+              renderTrigger: true,
+              default: { r: 160, g: 160, b: 160, a: 1 },
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_x_separator_enabled?.value),
+            },
+          },
+          {
+            name: 'range_color_x_separator_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Separator line color'),
+              renderTrigger: true,
+              default: { r: 90, g: 90, b: 90, a: 1 },
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.range_color_x_separator_enabled?.value),
+            },
+          },
+        ],
         ['time_shift_color'],
         ...showValueSection,
         [

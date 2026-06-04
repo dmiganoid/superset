@@ -99,6 +99,17 @@ export type EchartsTimeseriesFormData = QueryFormData & {
   showExtraControls: boolean;
   percentageThreshold: number;
   orientation?: OrientationType;
+
+  rangeColorEnabled?: boolean;
+  rangeColorAxis?: 'x' | 'y';
+  rangeColorBounds?: [number | string | null, number | string | null];
+  rangeInsideColor?: string | { r: number; g: number; b: number; a?: number };
+  rangeOutsideColor?: string | { r: number; g: number; b: number; a?: number };
+  rangeShowBoundaries?: boolean;
+  rangeColorXSeparatorEnabled?: boolean;
+  rangeColorXSeparatorMetric?: any;
+  rangeColorPastColor?: string | { r: number; g: number; b: number; a?: number };
+  rangeColorXSeparatorColor?: string | { r: number; g: number; b: number; a?: number };
 } & LegendFormData &
   TitleFormData;
 
