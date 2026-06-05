@@ -41,7 +41,7 @@
 
     /* Completeness */
     "skipLibCheck": true,
-
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@superset-ui/core": ["./packages/superset-ui-core/src"],

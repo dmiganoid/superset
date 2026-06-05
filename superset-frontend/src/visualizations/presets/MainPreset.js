@@ -83,6 +83,7 @@ import { FilterPlugins } from 'src/constants';
 import AgGridTableChartPlugin from '@superset-ui/plugin-chart-ag-grid-table';
 import TimeTableChartPlugin from '../TimeTable';
 import { RankFlowChartPlugin } from '../../../plugins/plugin-chart-rank-flow/src';
+import { PluginChartBullet } from '../../../plugins/plugin-chart-bullet/src';
 
 export default class MainPreset extends Preset {
   constructor() {
@@ -179,6 +180,7 @@ export default class MainPreset extends Preset {
         new EchartsSunburstChartPlugin().configure({ key: VizType.Sunburst }),
         new HandlebarsChartPlugin().configure({ key: VizType.Handlebars }),
         new EchartsBubbleChartPlugin().configure({ key: VizType.Bubble }),
+        new PluginChartBullet().configure({ key: 'plugin_bullet_chart' }),
         new CartodiagramPlugin({
           defaultLayers: [
             {
